@@ -1,0 +1,14 @@
+Domain: google.com, Registrar: MarkMonitor Inc.
+Domain: openai.com, Registrar: MarkMonitor, Inc.
+Domain: python.org, Registrar: Gandi SAS
+Domain: perplexity.ai, Registrar: GoDaddy.com, LLC
+Domain: reddit.com, Registrar: MarkMonitor Inc.
+Domain: stackoverflow.com, Registrar: CSC Corporate Domains, Inc.
+Domain: github.com, Registrar: MarkMonitor Inc.
+Domain: amazon.com, Registrar: MarkMonitor Inc.
+Domain: meta.com, Registrar: RegistrarSafe, LLC
+Domain: tesla.com, Registrar: MarkMonitor Inc.
+Domain: apple.com, Registrar: NOM-IQ Ltd dba Com Laude
+Domain: cisco.com, Registrar: MarkMonitor, Inc.
+Domain: wikipedia.org, Registrar: MarkMonitor Inc.
+Domain: microsoft.com, Registrar: MarkMonitor Inc.

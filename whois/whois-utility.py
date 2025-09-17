@@ -135,3 +135,4 @@ if __name__ == "__main__":
 # 1. Provide domains as command line arguments: python whois-utility.py example.com openai.com
 # 2. Or, provide a file path: python whois-utility.py --file domains.csv
 # 3. The results will be printed to stdout or saved to a file specified by --output
+# 4. Specify the output format: python whois-utility.py --format json example.com
