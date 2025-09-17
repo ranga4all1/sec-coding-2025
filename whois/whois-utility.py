@@ -23,7 +23,21 @@ def lookup_registrar(domain_queue, results):
             for attempt in range(retries):
                 try:
                     w = whois.whois(domain)
-                    registrar = getattr(w, 'registrar', 'Not found')
+                    registrar = None
+
+                    # Check for common registrar labels
+                    for label in ['registrar', 'Registrar', 'Sponsoring Registrar', 'Registrar Name']:
+                        value = getattr(w, label, None)
+                        if value:
+                            if isinstance(value, list):
+                                registrar = value[0]  # Take the first if it's a list
+                            else:
+                                registrar = value
+                            break  # Found a registrar, no need to check other labels
+
+                    if not registrar:
+                        registrar = 'Not found'
+
                     results.append({'domain': domain, 'registrar': registrar})
                     break  # Success, break retry loop
                 except Exception as e:
