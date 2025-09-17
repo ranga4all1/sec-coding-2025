@@ -12,6 +12,8 @@ import threading
 import time
 import queue
 import random
+import argparse
+import json
 
 def lookup_registrar(domain_queue, results):
     while True:
@@ -31,6 +33,7 @@ def lookup_registrar(domain_queue, results):
                         time.sleep(wait_time)
                     else:
                         results.append({'domain': domain, 'registrar': f'Error: {e}'})
+                        print("**FINAL OUTPUT**") # Print before final error result
                 finally:
                     pass # No action needed here
             domain_queue.task_done()
@@ -38,17 +41,36 @@ def lookup_registrar(domain_queue, results):
             break
 
 def main():
-    # 1. Read domains from CSV file
-    try:
-        domains_df = pd.read_csv('domains.csv', header=None, names=['domain'], dtype={'domain': str})
-        domains_df = domains_df.dropna()  # Remove rows with NaN values
-        domains = domains_df['domain'].tolist()
-        domains = [d.strip() for d in domains] # Remove whitespace
-    except FileNotFoundError:
-        print("Error: domains.csv not found.  Please create a CSV file named domains.csv with a list of domains in the first column.")
-        return
-    except Exception as e:
-        print(f"Error reading domains.csv: {e}")
+    parser = argparse.ArgumentParser(description='Whois Lookup Script')
+    parser.add_argument('domains', nargs='*', help='List of domains to lookup')
+    parser.add_argument('--file', help='Path to a CSV file containing a list of domains')
+    parser.add_argument('--format', choices=['text', 'csv', 'json'], default='csv', help='Output format (text, csv, json)')
+    parser.add_argument('--output', help='Output file path. If not specified, prints to stdout.')
+
+    args = parser.parse_args()
+
+    domains = []
+
+    # 1. Get domains from command line or file
+    if args.domains:
+        domains = args.domains
+    elif args.file:
+        try:
+            domains_df = pd.read_csv(args.file, header=None, names=['domain'], dtype={'domain': str})
+            domains_df = domains_df.dropna()  # Remove rows with NaN values
+            domains = domains_df['domain'].tolist()
+            domains = [d.strip() for d in domains] # Remove whitespace
+        except FileNotFoundError:
+            print(f"Error: {args.file} not found.")
+            print("**FINAL OUTPUT**")
+            return
+        except Exception as e:
+            print(f"Error reading {args.file}: {e}")
+            print("**FINAL OUTPUT**")
+            return
+    else:
+        print("Error: Please provide domains or a file path.")
+        print("**FINAL OUTPUT**")
         return
 
     # 2. Parallel lookups with rate limiting
@@ -66,9 +88,29 @@ def main():
 
     domain_queue.join()  # Wait for all domains to be processed
 
-    # 3. Output results to CSV
-    pd.DataFrame(results).to_csv('whois_registrars_threaded.csv', index=False)
-    print("Results saved to whois_registrars_threaded.csv")
+    # 3. Output results
+    df_results = pd.DataFrame(results)
+
+    if args.format == 'csv':
+        output = df_results.to_csv(index=False)
+    elif args.format == 'json':
+        output = df_results.to_json(orient='records')
+    else:  # text
+        output = ""
+        for _, row in df_results.iterrows():
+            output += f"Domain: {row['domain']}, Registrar: {row['registrar']}\n"
+
+    print("**FINAL OUTPUT**")
+    if args.output:
+        try:
+            with open(args.output, 'w') as f:
+                f.write(output)
+            print(f"Results saved to {args.output}")
+        except Exception as e:
+            print(f"Error writing to {args.output}: {e}")
+    else:
+        print(output)
+
 
 if __name__ == "__main__":
     main()
@@ -76,6 +118,6 @@ if __name__ == "__main__":
 # Note: Be respectful of the whois server's rate limits and usage policies.
 
 # usage:
-# 1. Create a CSV file named domains.csv with a list of domains in the first column.
-# 2. Run the script: python whois-utility.py
-# 3. The results will be saved to whois_registrars_threaded.csv
+# 1. Provide domains as command line arguments: python whois-utility.py example.com openai.com
+# 2. Or, provide a file path: python whois-utility.py --file domains.csv
+# 3. The results will be printed to stdout or saved to a file specified by --output
