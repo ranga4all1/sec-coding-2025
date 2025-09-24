@@ -211,3 +211,6 @@ __marimo__/
 # Ignore API keys file
 sec-manager/api_keys.txt
 # Ignore key files
+*.key
+# Ignore environment variable files
+.env
