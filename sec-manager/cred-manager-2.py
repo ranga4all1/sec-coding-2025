@@ -1,39 +1,33 @@
-import sqlite3
-from cryptography.fernet import Fernet
+# Credential Manager
+
+'''
+Exercise: Secrets Manager
+
+Design an API key storage system to store API keys for services. The
+program should present two options to users to store and retrieve
+passwords. You can use either an in-memory storage or store your
+credentials in a file.
+
+a) For storing, the program should ask for the inputs and store the password
+securely. The inputs are:
+String: ServiceName
+String: APIKey
+
+b) For retrieving the program asks for the service name and retrieves the
+API key.
+'''
+
 import os
 import hashlib
+from cryptography.fernet import Fernet
 
-# Constants for storage options
+# Constants
 IN_MEMORY = 1
 FILE_STORAGE = 2
 
-# Load or generate key (store/load it securely in real use)
-def load_key():
-    try:
-        with open('encryption.key', 'rb') as keyfile:
-            return keyfile.read()
-    except FileNotFoundError:
-        key = Fernet.generate_key()
-        with open('encryption.key', 'wb') as keyfile:
-            keyfile.write(key)
-        return key
-
-ENCRYPTION_KEY = load_key()
-CIPHER = Fernet(ENCRYPTION_KEY)
-
-# SQLite DB setup
-def init_db(db_path='credentials.db'):
-    conn = sqlite3.connect(db_path)
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS api_keys (
-            id INTEGER PRIMARY KEY,
-            service TEXT UNIQUE NOT NULL,
-            api_key_encrypted TEXT NOT NULL
-        )
-    ''')
-    conn.commit()
-    conn.close()
+# Generate a key for encryption
+encryption_key = Fernet.generate_key()
+cipher = Fernet(encryption_key)
 
 # Function to hash the API key
 def hash_api_key(api_key):
@@ -44,26 +38,14 @@ def hash_api_key(api_key):
 # Function to encrypt the API key
 def encrypt_api_key(api_key):
     """Encrypts the API key using Fernet."""
-    encrypted_key = CIPHER.encrypt(api_key.encode())
+    encrypted_key = cipher.encrypt(api_key.encode())
     return encrypted_key
 
 # Function to decrypt the API key
 def decrypt_api_key(encrypted_key):
     """Decrypts the API key using Fernet."""
-    decrypted_key = CIPHER.decrypt(encrypted_key).decode()
+    decrypted_key = cipher.decrypt(encrypted_key).decode()
     return decrypted_key
-
-def store_api_key(service, api_key, db_path='credentials.db'):
-    enc_key = CIPHER.encrypt(api_key.encode())
-    conn = sqlite3.connect(db_path)
-    c = conn.cursor()
-    c.execute('''
-        INSERT OR REPLACE INTO api_keys (service, api_key_encrypted)
-        VALUES (?, ?)
-    ''', (service, enc_key))
-    conn.commit()
-    conn.close()
-    print(f"API key for {service} securely stored in DB.")
 
 # Function to store credentials in memory
 def store_in_memory(hash_table, service_name, api_key):
@@ -85,18 +67,6 @@ def store_in_file(filename, service_name, api_key):
         print(f"API key for {service_name} stored in file (encrypted).")
     except Exception as e:
         print(f"Error storing in file: {e}")
-
-def retrieve_api_key(service, db_path='credentials.db'):
-    conn = sqlite3.connect(db_path)
-    c = conn.cursor()
-    c.execute('SELECT api_key_encrypted FROM api_keys WHERE service=?', (service,))
-    result = c.fetchone()
-    conn.close()
-    if result:
-        return CIPHER.decrypt(result[0]).decode()
-    else:
-        print(f"No API key found for {service}.")
-        return None
 
 # Function to retrieve credentials from memory
 def retrieve_from_memory(hash_table, service_name):
@@ -137,25 +107,9 @@ def retrieve_from_file(filename, service_name):
         return None
 
 # Function to list available service keys
-def list_available_keys(hash_table, filename, db_path='credentials.db'):
+def list_available_keys(hash_table, filename):
     """Lists the service names for which keys are stored."""
     print("\nAvailable Service Keys:")
-
-    # List keys stored in SQLite DB
-    print("\nIn SQLite DB:")
-    try:
-        conn = sqlite3.connect(db_path)
-        c = conn.cursor()
-        c.execute('SELECT service FROM api_keys')
-        services = c.fetchall()
-        conn.close()
-        if services:
-            for service in services:
-                print(f"- {service[0]}")
-        else:
-            print("No keys stored in SQLite DB.")
-    except sqlite3.Error as e:
-        print(f"Error reading from SQLite DB: {e}")
 
     # List keys stored in memory
     print("\nIn Memory:")
@@ -201,7 +155,7 @@ def create_hash_table(size):
 # Step 3: Insert a value into the hash table
 def insert(hash_table, key, value):
     index = simple_hash(key, len(hash_table))
-    print(f"Inserting (service: {key}) at index {index}")
+    print(f"Inserting ({key}, {value}) at index {index}")
 
     # Check if key already exists and update
     for pair in hash_table[index]:
@@ -215,10 +169,10 @@ def insert(hash_table, key, value):
 # Step 4: Search for a value by key
 def search(hash_table, key):
     index = simple_hash(key, len(hash_table))
-    print(f"Searching for service: {key} at index {index}")
+    print(f"Searching for key {key} at index {index}")
     for pair in hash_table[index]:
         if pair[0] == key:
-            print(f"Found value for service: {key}")
+            print(f"Found value: {pair[1]}")
             return pair[1]
     print("Key not found")
     return None
@@ -231,33 +185,18 @@ def main():
 
     # Store the encryption key in a file (INSECURE - for demonstration purposes only)
     with open("encryption.key", "wb") as key_file:
-        key_file.write(ENCRYPTION_KEY)
-
-    init_db()
+        key_file.write(encryption_key)
 
     while True:
         print("\nChoose an option:")
-        print("1. Store API key (SQLite)")
-        print("2. Retrieve API key (SQLite)")
-        print("3. Store API key (In-Memory/File)")
-        print("4. Retrieve API key (In-Memory/File)")
-        print("5. List available keys (In-Memory/File)")
-        print("6. Exit")
+        print("1. Store API key")
+        print("2. Retrieve API key")
+        print("3. List available keys")
+        print("4. Exit")
 
-        choice = input("Enter your choice (1-6): ")
+        choice = input("Enter your choice (1-4): ")
 
         if choice == "1":
-            service_name = input("Enter service name: ")
-            api_key = input("Enter API key: ")
-            store_api_key(service_name, api_key)
-
-        elif choice == "2":
-            service_name = input("Enter service name to retrieve: ")
-            retrieved_key = retrieve_api_key(service_name)
-            if retrieved_key:
-                print(f"Retrieved API key: {retrieved_key}")
-
-        elif choice == "3":
             print("\nChoose storage option:")
             print("1. In-memory")
             print("2. In file")
@@ -274,7 +213,7 @@ def main():
             else:
                 print("Invalid storage choice.")
 
-        elif choice == "4":
+        elif choice == "2":
             print("\nChoose retrieval option:")
             print("1. From memory")
             print("2. From file")
@@ -294,15 +233,15 @@ def main():
             else:
                 print("Invalid retrieval choice.")
 
-        elif choice == "5":
+        elif choice == "3":
             list_available_keys(hash_table, filename)
 
-        elif choice == "6":
+        elif choice == "4":
             print("Exiting...")
             break
 
         else:
-            print("Invalid choice. Please enter 1, 2, 3, 4, 5 or 6.")
+            print("Invalid choice. Please enter 1, 2, 3, or 4.")
 
 if __name__ == "__main__":
     main()

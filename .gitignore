@@ -214,3 +214,5 @@ sec-manager/api_keys.txt
 *.key
 # Ignore environment variable files
 .env
+# Ignore database with user credentials
+credentials.db
