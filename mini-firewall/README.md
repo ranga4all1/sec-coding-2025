@@ -1,64 +1,31 @@
 # Mini Firewall - Packet Sorter
 
-## Description
+This Python script, `mini-firewall.py`, is a command-line tool that sorts packets from an input CSV file based on priority and serial number, and writes the sorted packets to an output CSV file. The script processes packets in chunks of 10, sorting each chunk independently and marking each batch in the output file.
 
-This Python script simulates a mini firewall by sorting packets based on their priority and serial number. It reads packet data from a CSV file, sorts the packets, and writes the sorted data to another CSV file. The script validates the priority range (1-10) and skips or warns on invalid entries.
+## Features
 
-## Code Logic
-
-1.  **Packet Loading:**
-    *   The script reads packet data from a CSV file specified by the user.
-    *   The `load_packets` function opens the CSV file, skips the header, and reads each line, extracting the serial number and priority of each packet.
-    *   The script handles different delimiters and strips whitespace from the input data.
-    *   It validates the number of fields in each row and skips rows with an invalid number of fields.
-    *   It checks if the header needs to be skipped by attempting to convert the first two rows to integers.
-    *   The script validates the priority range (1-10) and skips packets with invalid priority values, issuing a warning message.
-    *   The packet data is stored as a list of tuples, where each tuple contains the serial number and priority of a packet.
-    *   Error handling is included to catch `FileNotFoundError` and `ValueError` exceptions.
-
-2.  **Packet Sorting:**
-    *   The script sorts the packets based on priority and serial number using a manual sorting algorithm.
-    *   The `manual_sort` function uses the `sorted` function with a lambda expression to sort the packets.
-    *   Packets are primarily sorted by priority (lower priority values are placed earlier in the sorted list).
-    *   If two packets have the same priority, they are sorted by serial number (lower serial numbers are placed earlier).
-
-3.  **Packet Writing:**
-    *   The script writes the sorted packet data to a CSV file specified by the user.
-    *   The `write_packets` function opens the output CSV file and writes a header row ("SerialNo,Priority").
-    *   It then iterates through the sorted list of packets and writes each packet's serial number and priority to a new line in the CSV file.
-    *   Error handling is included to catch potential exceptions during file writing.
+- **CSV Input/Output**: Reads packet data from a CSV file and writes sorted data to another CSV file.
+- **Flexible Delimiters**: Handles CSV files with different delimiters and ignores leading/trailing whitespace.
+- **Error Handling**: Provides robust error handling for file operations, invalid data formats, and out-of-range priority values.
+- **Chunk-based Sorting**: Sorts packets in chunks of 10 to avoid global sorting, processing each chunk independently.
+- **Batch Marking**: Includes markers in the output file to delineate separate batches of sorted packets.
+- **Command-Line Arguments**: Uses `argparse` for easy configuration of input and output file names.
 
 ## Usage
 
-1.  **Run the script:**
+1.  **Prerequisites**:
+    - Python 3.x
+
+2.  **Running the Script**:
 
     ```bash
     python mini-firewall.py -i input.csv -o output.csv
     ```
 
-2.  **Arguments:**
+    -   `-i` or `--input`: Specifies the input CSV file name (default: `input.csv`).
+    -   `-o` or `--output`: Specifies the output CSV file name (default: `output.csv`).
 
-    *   `-i` or `--input`: Specifies the input CSV file name. Default is `input.csv`.
-    *   `-o` or `--output`: Specifies the output CSV file name. Default is `output.csv`.
-
-3.  **CSV File Format:**
-
-    The input CSV file should have the following format:
-
-    ```csv
-    SerialNo,Priority
-    1,5
-    2,3
-    3,1
-    ...
-    ```
-
-    *   `SerialNo`: The serial number of the packet (integer).
-    *   `Priority`: The priority of the packet (integer between 1 and 10, inclusive).
-
-4.  **Example:**
-
-    If you have an input CSV file named `input.csv` with the following content:
+3.  **Example `input.csv`**:
 
     ```csv
     SerialNo,Priority
@@ -68,22 +35,70 @@ This Python script simulates a mini firewall by sorting packets based on their p
     4,3
     5,7
     6,10
+    7,2
+    8,4
+    9,5
+    10,1
+    11,3
+    12,5
+    13,7
+    14,2
+    15,4
+    16,6
+    17,8
+    18,9
+    19,6
+    20,8
+    21,10
+    22,1
+    23,3
+    24,5
     ```
 
-    Running the script with the command:
-
-    ```bash
-    python mini-firewall.py -i input.csv -o output.csv
-    ```
-
-    will produce an output CSV file named `output.csv` with the following content:
+4.  **Example `output.csv`**:
 
     ```csv
     SerialNo,Priority
+    # Batch 1
     3,1
+    10,1
     2,3
     4,3
+    11,3
     1,5
+    9,5
+    12,5
     5,7
     6,10
+    # Batch 2
+    7,2
+    14,2
+    8,4
+    15,4
+    16,6
+    19,6
+    13,7
+    17,8
+    20,8
+    18,9
+    # Batch 3
+    22,1
+    23,3
+    24,5
+    21,10
     ```
+
+## Implementation Details
+
+-   **Loading Packets**: The `load_packets` function reads the input CSV file, handles comments, empty lines, and potential errors in data format.
+-   **Sorting**: The `manual_sort` function sorts packets based on priority (ascending) and serial number (ascending).
+-   **Chunk Processing**: The `main` function processes packets in chunks of 10, sorts each chunk, and writes the sorted chunks to the output file with batch markers.
+
+## Error Handling
+
+The script includes comprehensive error handling:
+
+-   **FileNotFoundError**: Handles cases where the input file does not exist.
+-   **ValueError**: Handles invalid data formats in the CSV file.
+-   **Priority Range**: Checks if the priority value is within the valid range (1-10).
+-   **General Exceptions**: Catches and reports any unexpected errors during file processing.

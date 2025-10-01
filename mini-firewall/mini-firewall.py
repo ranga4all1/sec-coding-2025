@@ -3,7 +3,7 @@ import argparse
 import csv
 
 def load_packets(filename):
-    """Loads packets from a CSV file with error handling and flexible delimiters."""
+    """Loads packets from a CSV file."""
     packets = []
     try:
         with open(filename, 'r') as file:
@@ -14,7 +14,6 @@ def load_packets(filename):
                 if not row or not any(row) or row[0].startswith('#'):
                     continue
 
-                # Handle different delimiters and strip whitespace
                 row = [field.strip() for field in row]
                 
                 if len(row) != 2:
@@ -32,7 +31,7 @@ def load_packets(filename):
                         except ValueError:
                             print(f"Skipping header line: {row}")
                             continue  # Skip what is assumed to be the header
-
+                    
                     SerialNo = int(SerialNo)
                     priority = int(priority)
 
@@ -61,40 +60,38 @@ def manual_sort(packets):
     return sorted(packets, key=lambda p: (p[1], p[0]))
 
 
-def write_packets(filename, packets):
-    """Writes sorted packets to a CSV file."""
-    try:
-        with open(filename, 'w') as file:
-            file.write("SerialNo,Priority\n")  # Write header
-            for packet in packets:
-                file.write(f"{packet[0]},{packet[1]}\n")
-        print(f"Sorted packets written to {filename} in batches of 10.")
-    except Exception as e:
-        print(f"Error writing to {filename}: {e}")
-        exit(1)
-
-
 def main(input_filename, output_filename):
-    """Main function to process and sort packets."""
+    """Main function to process and sort packets in chunks."""
     print("Processing input file...")
     packets = load_packets(input_filename)
     print("--------------------------------\n")
 
-    print("Sorting packets by priority and serial number...")
+    print("Sorting packets in chunks and writing to output file...")
     try:
-        import time
-        start_time = time.time()
-        packets_sorted = manual_sort(packets)
-        end_time = time.time()
-        print(f"Sorting completed in {end_time - start_time:.6f} seconds.")
-    except Exception as e:
-        print(f"Error during sorting: {e}")
-        exit(1)
-    print(f"Sorted {len(packets_sorted)} packets.")
-    print("--------------------------------\n")
+        chunk_size = 10
+        
+        with open(output_filename, 'w') as file:
+            file.write("SerialNo,Priority\n")  # Write header
 
-    print("Writing sorted packets to output file...")
-    write_packets(output_filename, packets_sorted)
+            batch_number = 1
+            for i in range(0, len(packets), chunk_size):
+                chunk = packets[i:i + chunk_size]
+                
+                # Sort the chunk
+                chunk_sorted = manual_sort(chunk)
+                
+                # Write the sorted chunk to the file
+                file.write(f"# Batch {batch_number}\n")  # Batch marker
+                for packet in chunk_sorted:
+                    file.write(f"{packet[0]},{packet[1]}\n")
+                
+                batch_number += 1
+                
+        print(f"Packets sorted in chunks and written to {output_filename}.")
+
+    except Exception as e:
+        print(f"Error during sorting and writing: {e}")
+        exit(1)
     print("--------------------------------\n")
 
     print("Done.")
