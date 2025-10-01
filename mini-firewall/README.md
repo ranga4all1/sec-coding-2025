@@ -2,19 +2,23 @@
 
 ## Description
 
-This Python script simulates a mini firewall by sorting packets based on their priority and serial number. It reads packet data from a CSV file, sorts the packets, and writes the sorted data to another CSV file.
+This Python script simulates a mini firewall by sorting packets based on their priority and serial number. It reads packet data from a CSV file, sorts the packets, and writes the sorted data to another CSV file. The script validates the priority range (1-10) and skips or warns on invalid entries.
 
 ## Code Logic
 
 1.  **Packet Loading:**
     *   The script reads packet data from a CSV file specified by the user.
     *   The `load_packets` function opens the CSV file, skips the header, and reads each line, extracting the serial number and priority of each packet.
+    *   The script handles different delimiters and strips whitespace from the input data.
+    *   It validates the number of fields in each row and skips rows with an invalid number of fields.
+    *   It checks if the header needs to be skipped by attempting to convert the first two rows to integers.
+    *   The script validates the priority range (1-10) and skips packets with invalid priority values, issuing a warning message.
     *   The packet data is stored as a list of tuples, where each tuple contains the serial number and priority of a packet.
     *   Error handling is included to catch `FileNotFoundError` and `ValueError` exceptions.
 
 2.  **Packet Sorting:**
     *   The script sorts the packets based on priority and serial number using a manual sorting algorithm.
-    *   The `manual_sort` function implements a selection sort algorithm to sort the packets.
+    *   The `manual_sort` function uses the `sorted` function with a lambda expression to sort the packets.
     *   Packets are primarily sorted by priority (lower priority values are placed earlier in the sorted list).
     *   If two packets have the same priority, they are sorted by serial number (lower serial numbers are placed earlier).
 
@@ -50,7 +54,7 @@ This Python script simulates a mini firewall by sorting packets based on their p
     ```
 
     *   `SerialNo`: The serial number of the packet (integer).
-    *   `Priority`: The priority of the packet (integer). Lower values indicate higher priority.
+    *   `Priority`: The priority of the packet (integer between 1 and 10, inclusive).
 
 4.  **Example:**
 
