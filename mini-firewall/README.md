@@ -10,6 +10,7 @@ This Python script, `mini-firewall.py`, is a command-line tool that sorts packet
 - **Chunk-based Sorting**: Sorts packets in chunks of 10 to avoid global sorting, processing each chunk independently.
 - **Batch Marking**: Includes markers in the output file to delineate separate batches of sorted packets.
 - **Command-Line Arguments**: Uses `argparse` for easy configuration of input and output file names.
+- **Output Customization**: Added options to suppress the header, batch markers, or output only the serial number for compatibility with autograders.
 
 ## Usage
 
@@ -19,11 +20,14 @@ This Python script, `mini-firewall.py`, is a command-line tool that sorts packet
 2.  **Running the Script**:
 
     ```bash
-    python mini-firewall.py -i input.csv -o output.csv
+    python mini-firewall.py -i input.csv -o output.csv [--no-header] [--no-markers] [--serial-only]
     ```
 
     -   `-i` or `--input`: Specifies the input CSV file name (default: `input.csv`).
     -   `-o` or `--output`: Specifies the output CSV file name (default: `output.csv`).
+    -   `--no-header`: Suppresses the header line in the output.
+    -   `--no-markers`: Suppresses batch markers in the output.
+    -   `--serial-only`: Outputs only the serial number of each packet.
 
 3.  **Example `input.csv`**:
 
@@ -55,7 +59,7 @@ This Python script, `mini-firewall.py`, is a command-line tool that sorts packet
     24,5
     ```
 
-4.  **Example `output.csv`**:
+4.  **Example `output.csv`**: (with default settings)
 
     ```csv
     SerialNo,Priority
@@ -88,11 +92,40 @@ This Python script, `mini-firewall.py`, is a command-line tool that sorts packet
     21,10
     ```
 
+5. **Example `output.csv`**: (with `--no-header --no-markers --serial-only`)
+
+    ```csv
+    3
+    10
+    2
+    4
+    11
+    1
+    9
+    12
+    5
+    6
+    7
+    14
+    8
+    15
+    16
+    19
+    13
+    17
+    20
+    18
+    22
+    23
+    24
+    21
+    ```
+
 ## Implementation Details
 
--   **Loading Packets**: The `load_packets` function reads the input CSV file, handles comments, empty lines, and potential errors in data format.
+-   **Loading Packets**: The `load_packets` function reads the input CSV file, handles comments, empty lines, and potential errors in data format. It now also uses `csv.Sniffer` to automatically detect the delimiter (comma or whitespace).
 -   **Sorting**: The `manual_sort` function sorts packets based on priority (ascending) and serial number (ascending).
--   **Chunk Processing**: The `main` function processes packets in chunks of 10, sorts each chunk, and writes the sorted chunks to the output file with batch markers.
+-   **Chunk Processing**: The `main` function processes packets in chunks of 10, sorts each chunk, and writes the sorted chunks to the output file with batch markers (optional).
 
 ## Error Handling
 

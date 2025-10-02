@@ -7,7 +7,16 @@ def load_packets(filename):
     packets = []
     try:
         with open(filename, 'r') as file:
-            reader = csv.reader(file, skipinitialspace=True)
+            # Attempt to sniff the delimiter
+            try:
+                dialect = csv.Sniffer().sniff(file.read(1024))
+                file.seek(0)  # Reset file pointer after sniffing
+                reader = csv.reader(file, dialect)
+            except csv.Error:
+                # Fallback to comma-separated if sniffing fails
+                file.seek(0)
+                reader = csv.reader(file, skipinitialspace=True)
+
             header_skipped = False
             for row_num, row in enumerate(reader):
                 # Skip empty lines and comments
@@ -17,8 +26,16 @@ def load_packets(filename):
                 row = [field.strip() for field in row]
                 
                 if len(row) != 2:
-                    print(f"Warning: Line {row_num + 1} has invalid number of fields ({len(row)}), skipping.")
-                    continue
+                    # If not comma-separated, try splitting by whitespace
+                    if len(row) == 1:
+                        row = row[0].split()
+                        row = [field.strip() for field in row]
+                        if len(row) != 2:
+                            print(f"Warning: Line {row_num + 1} has invalid number of fields ({len(row)}), skipping.")
+                            continue
+                    else:
+                        print(f"Warning: Line {row_num + 1} has invalid number of fields ({len(row)}), skipping.")
+                        continue
 
                 try:
                     SerialNo, priority = row
@@ -60,7 +77,7 @@ def manual_sort(packets):
     return sorted(packets, key=lambda p: (p[1], p[0]))
 
 
-def main(input_filename, output_filename):
+def main(input_filename, output_filename, no_header, no_markers, serial_only):
     """Main function to process and sort packets in chunks."""
     print("Processing input file...")
     packets = load_packets(input_filename)
@@ -71,7 +88,8 @@ def main(input_filename, output_filename):
         chunk_size = 10
         
         with open(output_filename, 'w') as file:
-            file.write("SerialNo,Priority\n")  # Write header
+            if not no_header:
+                file.write("SerialNo,Priority\n")  # Write header
 
             batch_number = 1
             for i in range(0, len(packets), chunk_size):
@@ -81,9 +99,13 @@ def main(input_filename, output_filename):
                 chunk_sorted = manual_sort(chunk)
                 
                 # Write the sorted chunk to the file
-                file.write(f"# Batch {batch_number}\n")  # Batch marker
+                if not no_markers:
+                    file.write(f"# Batch {batch_number}\n")  # Batch marker
                 for packet in chunk_sorted:
-                    file.write(f"{packet[0]},{packet[1]}\n")
+                    if serial_only:
+                        file.write(f"{packet[0]}\n")
+                    else:
+                        file.write(f"{packet[0]},{packet[1]}\n")
                 
                 batch_number += 1
                 
@@ -103,6 +125,12 @@ if __name__ == "__main__":
                         help="Input CSV file name (default: input.csv)")
     parser.add_argument("-o", "--output", dest="output_file", default="output.csv",
                         help="Output CSV file name (default: output.csv)")
+    parser.add_argument("--no-header", dest="no_header", action="store_true",
+                        help="Suppress header line in output")
+    parser.add_argument("--no-markers", dest="no_markers", action="store_true",
+                        help="Suppress batch markers in output")
+    parser.add_argument("--serial-only", dest="serial_only", action="store_true",
+                        help="Output only the serial number")
     args = parser.parse_args()
 
-    main(args.input_file, args.output_file)
+    main(args.input_file, args.output_file, args.no_header, args.no_markers, args.serial_only)
